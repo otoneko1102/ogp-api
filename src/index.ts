@@ -4,6 +4,18 @@ import { fetchOGData } from "./og.js";
 
 const app = new Hono();
 
+app.use("*", async (c, next) => {
+  if (c.req.method === "OPTIONS") {
+    return c.text("", 200, {
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type, Authorization",
+    });
+  }
+  await next();
+  c.header("Access-Control-Allow-Origin", "*");
+});
+
 app.get("/", async (c) => {
   const reqUrl = new URL(
     c.req.url || "/",
