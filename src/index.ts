@@ -1,6 +1,7 @@
 import { serve } from "@hono/node-server";
 import { Hono } from "hono";
 import { fetchOGData } from "./og.js";
+import { DEFAULT_LANG, isSupportedLang, SUPPORTED_LANGS } from "./config.js";
 
 const app = new Hono();
 
@@ -22,13 +23,23 @@ app.get("/", async (c) => {
     `http://${c.req.header("host") || "localhost"}`,
   );
   const target = reqUrl.searchParams.get("url");
+  const langParam = reqUrl.searchParams.get("lang") ?? undefined;
 
   if (!target) {
     return c.json({ error: "Missing `url` query parameter" }, 400);
   }
 
+  if (langParam && !isSupportedLang(langParam)) {
+    return c.json(
+      {
+        error: `Invalid 'lang' parameter; allowed: ${SUPPORTED_LANGS.join(", ")}`,
+      },
+      400,
+    );
+  }
+
   try {
-    const data = await fetchOGData(target);
+    const data = await fetchOGData(target, langParam ?? DEFAULT_LANG);
     if (!data) return c.json({ error: "Invalid url" }, 400);
 
     return c.json(data, 200, {

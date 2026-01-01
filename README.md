@@ -28,6 +28,7 @@ Response JSON:
 Notes:
 
 - The server caches fetched OGP results for 30 minutes (server-side). The response also includes `Cache-Control: public, max-age=1800` for client caching.
+- You can specify the language used for fetching metadata with the `lang` query parameter (supported values: `en`, `ja`). Example: `/?url=...&lang=ja`. The server keeps separate caches per language. The default language is set in `src/config.ts` (`DEFAULT_LANG`).
 - If fetching fails, a lightweight fallback object is returned with `isFallback: true`. Fallback results are cached for a short default period (1 minute) and can be configured via the `OGP_FALLBACK_TTL_MS` environment variable (milliseconds).
 ## Running with PM2
 

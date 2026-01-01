@@ -1,4 +1,5 @@
 import { DOMParser } from "linkedom";
+import { DEFAULT_LANG, isSupportedLang } from "./config.js";
 
 export type OGData = {
   title: string;
@@ -106,26 +107,33 @@ const fetchWithRetry = async (
 
 export const fetchOGData = async (
   url?: string | null,
+  lang?: string,
 ): Promise<OGData | null> => {
   if (!url) return null;
 
-  const cached = cache.get(url);
-  if (cached && cached.expiresAt > Date.now()) return cached.data;
-  if (cached) cache.delete(url);
+  const langToUse = isSupportedLang(lang) ? lang : DEFAULT_LANG;
+  const key = `${langToUse}:${url}`;
 
-  if (inFlight.has(url)) return inFlight.get(url)!;
+  const cached = cache.get(key);
+  if (cached && cached.expiresAt > Date.now()) return cached.data;
+  if (cached) cache.delete(key);
+
+  if (inFlight.has(key)) return inFlight.get(key)!;
 
   const promise = (async () => {
     const urlObj = new URL(url);
     const domain = urlObj.hostname.replace(/^www\./, "");
 
     try {
+      const acceptLanguage =
+        langToUse === "ja" ? "ja-JP,ja;q=0.9" : "en-US,en;q=0.9";
+
       const headers = {
         "User-Agent":
           process.env.OGP_USER_AGENT || "Mozilla/5.0 (compatible; ogp-api/1.0)",
         Accept:
           "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-        "Accept-Language": "en-US,en;q=0.9",
+        "Accept-Language": acceptLanguage,
       };
 
       let html: string | null = null;
@@ -162,7 +170,7 @@ export const fetchOGData = async (
           }
         }
 
-        cache.set(url, { data, expiresAt: Date.now() + TTL_MS });
+        cache.set(key, { data, expiresAt: Date.now() + TTL_MS });
         return data;
       }
 
@@ -180,7 +188,7 @@ export const fetchOGData = async (
       // Cache fallback results for a short period (configurable via OGP_FALLBACK_TTL_MS in ms)
       const fallbackTtl =
         Number(process.env.OGP_FALLBACK_TTL_MS) || FALLBACK_TTL_MS;
-      cache.set(url, {
+      cache.set(key, {
         data: fallbackData,
         expiresAt: Date.now() + fallbackTtl,
       });
@@ -188,12 +196,12 @@ export const fetchOGData = async (
     }
   })();
 
-  inFlight.set(url, promise);
+  inFlight.set(key, promise);
   try {
     const res = await promise;
     return res;
   } finally {
-    inFlight.delete(url);
+    inFlight.delete(key);
   }
 };
 
