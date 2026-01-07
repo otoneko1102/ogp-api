@@ -108,6 +108,7 @@ const fetchWithRetry = async (
 export const fetchOGData = async (
   url?: string | null,
   lang?: string,
+  userAgent?: string | null,
 ): Promise<OGData | null> => {
   if (!url) return null;
 
@@ -130,7 +131,9 @@ export const fetchOGData = async (
 
       const headers = {
         "User-Agent":
-          process.env.OGP_USER_AGENT || "Mozilla/5.0 (compatible; ogp-api/1.0)",
+          (userAgent && userAgent.trim()) ||
+          process.env.OGP_USER_AGENT ||
+          "Mozilla/5.0 (compatible; ogp-api/1.0)",
         Accept:
           "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
         "Accept-Language": acceptLanguage,

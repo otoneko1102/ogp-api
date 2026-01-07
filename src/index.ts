@@ -39,7 +39,8 @@ app.get("/", async (c) => {
   }
 
   try {
-    const data = await fetchOGData(target, langParam ?? DEFAULT_LANG);
+    const ua = c.req.header("user-agent") ?? c.req.header("User-Agent") ?? null;
+    const data = await fetchOGData(target, langParam ?? DEFAULT_LANG, ua);
     if (!data) return c.json({ error: "Invalid url" }, 400);
 
     return c.json(data, 200, {
